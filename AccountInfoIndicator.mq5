@@ -2,21 +2,18 @@
 #property version   "1.00"
 #property strict
 #property indicator_chart_window
-#property indicator_plots 1
-#property indicator_buffers 1
+#property indicator_plots 0
 
-double buf_dummy[];
-
-input string sFontName = "Arial";
+input string sFontName = "Tahoma";
 input int    iFontSize = 12;
 input int    iXOffset = 20;
-input int    iYOffset = 20;
+input int    iYOffset = 25;
 input bool   bShowBackground = true;
-input color  clrBackground = C'20,20,20';
+input color  clrBackground = clrBlack;
 input color  clrBalance = clrDodgerBlue;
 input color  clrEquity = clrLightGray;
 input color  clrProfit = clrLimeGreen;
-input color  clrLoss = clrRed;
+input color  clrLoss = clrTomato;
 
 string g_balanceLabel = "MT5_Balance_Label";
 string g_equityLabel  = "MT5_Equity_Label";
@@ -24,11 +21,9 @@ string g_profitLabel  = "MT5_Profit_Label";
 
 int OnInit()
 {
-   SetIndexBuffer(0, buf_dummy, INDICATOR_DATA);
-   
-   CreateAccountLabel(g_balanceLabel, "Balance: --", clrBalance, 0);
-   CreateAccountLabel(g_equityLabel,  "Equity: --",  clrEquity,  25);
-   CreateAccountLabel(g_profitLabel,  "P/L: --",     clrProfit,  50);
+   CreateLabel(g_balanceLabel, "Balance: --", clrBalance, 0);
+   CreateLabel(g_equityLabel,  "Equity: --",  clrEquity,  25);
+   CreateLabel(g_profitLabel,  "P/L: --",     clrProfit,  50);
 
    EventSetTimer(1);
    return(INIT_SUCCEEDED);
@@ -66,7 +61,7 @@ void UpdateAccountInfo()
 {
    double balance = AccountInfoDouble(ACCOUNT_BALANCE);
    double equity  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double profit  = equity - balance;
+   double profit  = AccountInfoDouble(ACCOUNT_PROFIT);
    string currency = AccountInfoString(ACCOUNT_CURRENCY);
 
    string balanceText = "Balance: " + DoubleToString(balance, 2) + " " + currency;
@@ -85,23 +80,32 @@ void UpdateAccountInfo()
    ObjectSetInteger(0, g_profitLabel, OBJPROP_COLOR, profitColor);
 }
 
-void CreateAccountLabel(string name, string text, color lblColor, int yOffset)
+void CreateLabel(string name, string text, color labelColor, int yOffset)
 {
    if(ObjectFind(0, name) == -1)
    {
-      ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+      if(!ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0))
+      {
+         Print("Failed to create label: ", name, " Error: ", GetLastError());
+         return;
+      }
    }
 
    ObjectSetInteger(0, name, OBJPROP_XDISTANCE, iXOffset);
    ObjectSetInteger(0, name, OBJPROP_YDISTANCE, iYOffset + yOffset);
    ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
-   ObjectSetInteger(0, name, OBJPROP_COLOR, lblColor);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, labelColor);
    ObjectSetString(0, name, OBJPROP_TEXT, text);
    ObjectSetString(0, name, OBJPROP_FONT, sFontName);
    ObjectSetInteger(0, name, OBJPROP_FONTSIZE, iFontSize);
-   ObjectSetInteger(0, name, OBJPROP_BACK, false);
    ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
-   ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+   ObjectSetInteger(0, name, OBJPROP_HIDDEN, false);
+   ObjectSetInteger(0, name, OBJPROP_BACK, false);
+
+   if(bShowBackground)
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrBackground);
+   else
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrNONE);
 }
 
 void DeleteLabel(string name)
